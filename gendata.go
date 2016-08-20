@@ -22,12 +22,15 @@ import (
 
 const url = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
 
-var filename = flag.String("output", "data.go", "output filename")
+var (
+	filename = flag.String("output", "data.go", "output filename")
+	timeout  = flag.Duration("timeout", 30*time.Second, "timeout to fetch csv (default 30s)")
+)
 
 func main() {
 	flag.Parse()
 	t := template.Must(template.New("program").Parse(program))
-	ss, err := fetch()
+	ss, err := fetch(*timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,8 +60,8 @@ func (ss services) Len() int           { return len(ss) }
 func (ss services) Less(i, j int) bool { return ss[i].Name < ss[j].Name }
 func (ss services) Swap(i, j int)      { ss[i], ss[j] = ss[j], ss[i] }
 
-func fetch() (services, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+func fetch(timeout time.Duration) (services, error) {
+	client := &http.Client{Timeout: timeout}
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
